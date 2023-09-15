@@ -7,6 +7,32 @@ module ALSU(clk,rst,A,B,opcode,cin,serial_in,red_op_A,red_op_B,bypass_A,bypass_B
     output reg[5:0] out;
     reg[2:0] A_samp,B_samp,opcode_samp;
     reg cin_samp,serial_in_samp,red_op_A_samp,red_op_B_samp,bypass_A_samp,bypass_B_samp,direction_samp;
+    wire[5:0] adder_out,multiplier_out;
+    
+    generate
+     if(FULL_ADDER=="ON")begin
+      c_addsub_0 add_with_carry (
+      .A(A),        // input wire [2 : 0] A
+      .B(B),        // input wire [2 : 0] B
+      .C_IN(cin),  // input wire C_IN
+      .S(adder_out)        // output wire [3 : 0] S
+    );
+     end  
+     else if(FULL_ADDER=="OFF")begin 
+      c_addsub_0 add_without_carry (
+        .A(A),        // input wire [2 : 0] A
+        .B(B),        // input wire [2 : 0] B
+        .C_IN(1'b0),  // input wire C_IN
+        .S(adder_out)        // output wire [3 : 0] S
+      );        
+      end
+      endgenerate
+
+     mult_gen_0 multipliying (
+          .A(A),  // input wire [2 : 0] A
+          .B(B),  // input wire [2 : 0] B
+          .P(multiplier_out)  // output wire [5 : 0] P
+        );
     
     always @(posedge clk or posedge rst) begin
     	if (rst) begin
@@ -90,11 +116,8 @@ module ALSU(clk,rst,A,B,opcode,cin,serial_in,red_op_A,red_op_B,bypass_A,bypass_B
             leds<=16'b1111_1111_1111_1111;
             leds<=~leds;
           end
-          else begin
-    			if(FULL_ADDER=="ON")
-    			  out<=A_samp+B_samp+cin_samp;
-    			else if(FULL_ADDER=="OFF")  
-    			  out<=A_samp+B_samp;
+          else begin  
+    			  out<=adder_out;		  
           end  
         end
     		3'b011:
@@ -105,7 +128,7 @@ module ALSU(clk,rst,A,B,opcode,cin,serial_in,red_op_A,red_op_B,bypass_A,bypass_B
             leds<=~leds;
           end
           else
-    			out<=A_samp*B_samp;
+    			out<=multiplier_out;
     		end
     		3'b100:
     		begin
